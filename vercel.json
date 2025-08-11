@@ -1,0 +1,15 @@
+        {
+          "version": 2,
+          "builds": [
+            {
+              "src": "index.js", // Adjust path if your main file is elsewhere
+              "use": "@vercel/node"
+            }
+          ],
+          "routes": [
+            {
+              "src": "/api/(.*)",
+              "dest": "/api" // Routes all requests starting with /api to your API entry point
+            }
+          ]
+        }
