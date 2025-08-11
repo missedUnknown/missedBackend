@@ -1,62 +1,42 @@
+// be_unknown/server.js
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { engine } from "express-handlebars";
+import { createServer } from "http";
 import { Server } from "socket.io";
-import http from "http";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import cors from "cors";
 
 const app = express();
-const server = http.createServer(app);
+const server = createServer(app);
+
+app.use(cors({ origin: "http://localhost:5173" })); // Vite's default port
 
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: { origin: "http://localhost:5173" }
 });
 
-const PORT = process.env.PORT || 5000;
-
-// Handlebars setup
-app.engine("hbs", engine({ extname: ".hbs", defaultLayout: false }));
-app.set("view engine", "hbs");
-app.set("views", path.join(__dirname, "views"));
-
-// Static files
-app.use(express.static(path.join(__dirname, "public")));
-
-// Dashboard UI
-app.get("/", (req, res) => {
-  res.render("status", { title: "API Live Status Dashboard" });
-});
-
-// Socket connection
 io.on("connection", (socket) => {
-  console.log("🔌 New client connected");
+  console.log("✅ New client connected:", socket.id);
 
-  // Send initial status
-  socket.emit("statusUpdate", getStatus());
+  socket.emit("statusUpdate", {
+    status: "Online",
+    version: "1.0.0",
+    uptime: process.uptime(),
+    serverTime: new Date().toLocaleString(),
+  });
 
-  // Send updated status every 2 seconds
-  const interval = setInterval(() => {
-    socket.emit("statusUpdate", getStatus());
-  }, 2000);
+  setInterval(() => {
+    socket.emit("statusUpdate", {
+      status: "Online",
+      version: "1.0.0",
+      uptime: process.uptime(),
+      serverTime: new Date().toLocaleString(),
+    });
+  }, 1000);
 
   socket.on("disconnect", () => {
-    console.log("❌ Client disconnected");
-    clearInterval(interval);
+    console.log("❌ Client disconnected:", socket.id);
   });
 });
 
-function getStatus() {
-  return {
-    status: "Online",
-    version: "1.0.0",
-    uptime: process.uptime().toFixed(0),
-    serverTime: new Date().toLocaleString(),
-  };
-}
-
-server.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+server.listen(5000, () => {
+  console.log("🚀 Backend running at http://localhost:5000");
 });
