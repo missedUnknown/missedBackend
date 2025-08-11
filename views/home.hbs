@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{title}}</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #58a6ff;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #8b949e;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .routes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .card {
+      background: #161b22;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0px 2px 8px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .card a {
+      text-decoration: none;
+      color: #58a6ff;
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .uptime {
+      background: #238636;
+      padding: 8px 15px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      display: inline-block;
+      margin-top: 5px;
+    }
+
+    .status-ok {
+      background: #238636;
+      color: white;
+    }
+
+    .status-down {
+      background: #da3633;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>{{title}}</h1>
+  <p>{{message}}</p>
+  <div class="uptime">⏳ Uptime: <span id="uptime">Loading...</span></div>
+
+  <div class="routes">
+    {{#each apiRoutes}}
+      <div class="card">
+        <div class="icon">🔗</div>
+        <strong>{{name}}</strong>
+        <div id="status-{{@index}}" class="status-badge">Checking...</div>
+        <a href="{{url}}" target="_blank">Open</a>
+      </div>
+    {{/each}}
+  </div>
+
+  <script>
+    let seconds = 0;
+
+    // Live uptime counter
+    setInterval(() => {
+      seconds++;
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      document.getElementById("uptime").textContent = 
+        (hrs > 0 ? hrs + "h " : "") +
+        (mins > 0 ? mins + "m " : "") +
+        secs + "s";
+    }, 1000);
+
+    // Fetch actual backend uptime on load
+    fetch("/status")
+      .then(res => res.json())
+      .then(data => {
+        seconds = Math.floor(data.uptime);
+      });
+
+    // Check each API route health
+    const routes = {{{json apiRoutes}}}; // Pass raw JSON from server
+    routes.forEach((route, index) => {
+      fetch(route.url)
+        .then(res => {
+          const statusEl = document.getElementById(`status-${index}`);
+          if (res.ok) {
+            statusEl.textContent = "Online ✅";
+            statusEl.className = "status-badge status-ok";
+          } else {
+            statusEl.textContent = "Offline ❌";
+            statusEl.className = "status-badge status-down";
+          }
+        })
+        .catch(() => {
+          const statusEl = document.getElementById(`status-${index}`);
+          statusEl.textContent = "Offline ❌";
+          statusEl.className = "status-badge status-down";
+        });
+    });
+  </script>
+
+</body>
+</html>
